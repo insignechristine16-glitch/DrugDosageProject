@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Drug Dosage Calculator</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="/web/calculator.css">
+<script src="/web/calculator.js" defer></script>
+</head>
+<body>
+<main data-reference="__REFERENCE__">
+  <h1>Drug Dosage Calculator</h1>
+  <p class="lead">Run the calculations from our drug dosage study. Every tab uses the same model as the rest of the program.</p>
+  <nav class="tabs" id="tabs" role="tablist" aria-label="Calculations">
+    <button role="tab" type="button" data-tab="patient">Patient dosage</button>
+    <button role="tab" type="button" data-tab="schedule">Try a schedule</button>
+    <button role="tab" type="button" data-tab="compare">Compare schedules</button>
+    <button role="tab" type="button" data-tab="find">Find schedules</button>
+    <button role="tab" type="button" data-tab="measured">Measured data</button>
+    <button role="tab" type="button" data-tab="results">Study results</button>
+  </nav>
+
+  <section class="tab" id="tab-patient" role="tabpanel">
+    <p class="intro"><strong>RQ5.</strong> Enter a patient's age and weight to find the dose that keeps the drug between
+      its medicinal and toxic levels. The handout drug is hypothetical, so this is a model result, not a prescription.</p>
+    <div class="top">
+      <section class="card">
+        <h2>Patient</h2>
+        <form id="form-patient">
+          <label for="age">Age (years)</label>
+          <input id="age" name="age" type="number" min="0" max="110" step="any" value="30" required>
+          <label for="weight">Weight (kg)</label>
+          <input id="weight" name="weight" type="number" min="2" max="250" step="any" value="70" required>
+          <label for="drug">Drug</label>
+          <select id="drug" name="drug">__DRUGS__</select>
+          <button class="go" type="submit">Calculate dosage</button>
+        </form>
+        <div class="result" aria-live="polite">
+          <h2>Recommended dosage</h2>
+          <p class="headline" id="p-headline">Calculating...</p>
+          <ul class="points" id="p-details"></ul>
+        </div>
+      </section>
+      <section class="card">
+        <h2>Drug level over time</h2>
+        <img id="p-graph" alt="Drug concentration over time for the recommended dosage" hidden>
+      </section>
+    </div>
+  </section>
+
+  <section class="tab" id="tab-schedule" role="tabpanel" hidden>
+    <p class="intro"><strong>RQ1.</strong> Enter any schedule and see how the drug level behaves. The starting values
+      are the handout's baseline: 6,000 mg once a day at 4.60 L for 48 hours.</p>
+    <div class="top">
+      <section class="card">
+        <h2>Schedule</h2>
+        <form id="form-schedule">
+          <label for="s-daily">Daily dose (mg/day)</label>
+          <input id="s-daily" name="daily" type="number" min="1" max="1000000" step="any" value="6000" required>
+          <label for="s-doses">Doses per day</label>
+          <select id="s-doses" name="doses">__DOSES__</select>
+          <label for="s-volume">Blood volume (L)</label>
+          <input id="s-volume" name="volume" type="number" min="0.05" max="200" step="any" value="4.60" required>
+          <label for="s-hours">Run length</label>
+          <select id="s-hours" name="hours">
+            <option value="48">48 hours (handout baseline)</option>
+            <option value="72">72 hours</option>
+            <option value="168">1 week</option>
+            <option value="336">2 weeks</option>
+          </select>
+          <details>
+            <summary>Drug values (handout defaults)</summary>
+            <label for="s-ka">Absorption rate (per hour)</label>
+            <input id="s-ka" name="ka" type="number" min="0.01" max="20" step="any" value="0.25" required>
+            <label for="s-half">Half-life (hours)</label>
+            <input id="s-half" name="half_life" type="number" min="0.1" max="200" step="any" value="6" required>
+            <label for="s-bio">Bioavailability (0 to 1)</label>
+            <input id="s-bio" name="bioavailability" type="number" min="0.01" max="1" step="any" value="1" required>
+            <label for="s-low">Medicinal level (mg/L)</label>
+            <input id="s-low" name="low" type="number" min="0.001" max="100000" step="any" value="800" required>
+            <label for="s-high">Toxic level (mg/L)</label>
+            <input id="s-high" name="high" type="number" min="0.001" max="1000000" step="any" value="1000" required>
+          </details>
+          <button class="go" type="submit">Run schedule</button>
+        </form>
+      </section>
+      <section class="card">
+        <div aria-live="polite">
+          <h2>Result <span class="chip" id="s-status"></span></h2>
+          <p class="headline" id="s-headline">Calculating...</p>
+          <ul class="points" id="s-details"></ul>
+        </div>
+        <h2 class="gap">Drug level and drug amounts over time</h2>
+        <img id="s-graph" alt="Drug concentration and the amount in each part of the model over time" hidden>
+      </section>
+    </div>
+    <section class="card below">
+      <h2>The numbers</h2>
+      <table class="facts" id="s-facts"></table>
+      <details>
+        <summary id="s-values-title">Values over time</summary>
+        <div class="wide"><table id="s-values"></table></div>
+      </details>
+    </section>
+  </section>
+
+  <section class="tab" id="tab-compare" role="tabpanel" hidden>
+    <p class="intro"><strong>RQ2 and RQ4.</strong> Put up to five schedules side by side. Each one runs for a week,
+      like the study's tables. Leave a row's daily dose empty to skip it.</p>
+    <div class="top">
+      <section class="card">
+        <h2>Start from an experiment in the study</h2>
+        <div class="presets">
+          <button class="quiet" type="button" data-preset="split">Same daily total, more doses</button>
+          <button class="quiet" type="button" data-preset="totals">Larger daily totals</button>
+          <button class="quiet" type="button" data-preset="volumes">Same schedule, three blood volumes</button>
+        </div>
+        <h2>Schedules</h2>
+        <form id="form-compare">
+          <table class="rows">
+            <thead><tr><th></th><th>mg/day</th><th>Doses/day</th><th>Volume (L)</th></tr></thead>
+            <tbody id="c-rows"></tbody>
+          </table>
+          <template id="c-row-template">
+            <tr>
+              <td></td>
+              <td><input name="daily" type="number" min="1" max="1000000" step="any" data-label="daily dose"></td>
+              <td><select name="doses" data-label="doses per day">__DOSES__</select></td>
+              <td><input name="volume" type="number" min="0.05" max="200" step="any" data-label="blood volume"></td>
+            </tr>
+          </template>
+          <label for="c-span">Graph shows</label>
+          <select id="c-span" name="span">
+            <option value="48">First 48 hours</option>
+            <option value="72">First 72 hours</option>
+            <option value="168">The whole week</option>
+          </select>
+          <button class="go" type="submit">Compare</button>
+        </form>
+      </section>
+      <section class="card">
+        <h2>Drug level over time</h2>
+        <p class="headline" id="c-headline">Calculating...</p>
+        <ul class="points" id="c-details"></ul>
+        <img id="c-graph" alt="Drug concentration over time for each schedule" hidden>
+      </section>
+    </div>
+    <section class="card below">
+      <h2>Last repeating cycle of each schedule</h2>
+      <div class="wide"><table id="c-table"></table></div>
+      <p class="note legend"></p>
+    </section>
+  </section>
+
+  <section class="tab" id="tab-find" role="tabpanel" hidden>
+    <p class="intro"><strong>RQ3 and RQ4.</strong> Test daily totals and dosing frequencies at one blood volume.</p>
+    <div class="top">
+      <section class="card">
+        <h2>Blood volume</h2>
+        <form id="form-find">
+          <label for="f-volume">Blood volume (L)</label>
+          <input id="f-volume" name="volume" type="number" min="0.05" max="200" step="any" value="4.60" required>
+          <details>
+            <summary>Daily totals to test</summary>
+            <label for="f-first">Lowest (mg/day)</label>
+            <input id="f-first" name="first" type="number" min="1" max="1000000" step="any" value="6000" required>
+            <label for="f-last">Highest (mg/day)</label>
+            <input id="f-last" name="last" type="number" min="1" max="1000000" step="any" value="18000" required>
+            <label for="f-step">Step (mg/day)</label>
+            <input id="f-step" name="step" type="number" min="1" max="1000000" step="any" value="500" required>
+          </details>
+          <button class="go" type="submit">Test all schedules</button>
+        </form>
+      </section>
+      <section class="card">
+        <div aria-live="polite">
+          <h2>Fewest doses that work</h2>
+          <p class="headline" id="f-headline">Calculating...</p>
+          <ul class="points" id="f-details"></ul>
+        </div>
+        <h2 class="gap">Selected schedules over one week</h2>
+        <img id="f-graph" alt="Drug concentration over one week for the selected schedules" hidden>
+      </section>
+    </div>
+    <section class="card below">
+      <h2>Status at the initial step of 0.01 h</h2>
+      <div class="wide"><table class="map" id="f-map"></table></div>
+      <p class="note legend"></p>
+      <h2 class="gap">Status changes at 0.005 h</h2>
+      <p class="note" id="f-refinement-note"></p>
+      <div class="wide"><table id="f-refinement"></table></div>
+    </section>
+    <section class="card below">
+      <h2>Estimated daily totals for the repeating cycle</h2>
+      <div class="wide"><table id="f-windows"></table></div>
+      <p class="note">Whole-mg estimates scale the Euler trough and peak from the 0.01 h run. The lower concentration
+        limit is inclusive and the upper limit is exclusive.</p>
+    </section>
+  </section>
+
+  <section class="tab" id="tab-measured" role="tabpanel" hidden>
+    <p class="intro"><strong>RQ6.</strong> Compare the model with real theophylline measurements from 12 people after one
+      dose. The model uses fixed published values, with nothing fitted to these measurements.</p>
+    <div class="top">
+      <section class="card">
+        <h2>Person</h2>
+        <form id="form-measured">
+          <label for="m-subject">Person in the dataset</label>
+          <select id="m-subject" name="subject">__SUBJECTS__</select>
+          <button class="go" type="submit">Compare with the model</button>
+        </form>
+        <div class="result" aria-live="polite">
+          <h2>This person</h2>
+          <p class="headline" id="m-headline">Calculating...</p>
+          <ul class="points" id="m-details"></ul>
+        </div>
+      </section>
+      <section class="card">
+        <h2>Measured points and model curve</h2>
+        <img id="m-graph" alt="Measured concentrations and the model curve for this person" hidden>
+      </section>
+    </div>
+    <section class="card below">
+      <h2>All 12 people, 120 samples after the dose</h2>
+      <table class="facts" id="m-overall"></table>
+      <details>
+        <summary>This person's samples</summary>
+        <div class="wide"><table id="m-samples"></table></div>
+      </details>
+      <details>
+        <summary>Errors for each person</summary>
+        <div class="wide"><table id="m-people"></table></div>
+      </details>
+    </section>
+  </section>
+
+  <section class="tab" id="tab-results" role="tabpanel" hidden>
+    <section class="card below">
+      <h2>Summary of findings</h2>
+      <ul class="points">__FINDINGS__</ul>
+    </section>
+    <section class="card below">
+      <h2>Verification checks</h2>
+      <div class="wide"><table><thead><tr><th>Check</th><th>Result</th><th>Status</th></tr></thead>
+        <tbody>__CHECKS__</tbody></table></div>
+    </section>
+    <section class="card below">
+      <h2>Study graphs (saved in the results folder)</h2>
+      <div class="graphs">__GRAPHS__</div>
+    </section>
+  </section>
+
+  <footer>
+    <span>Balagao, Insigne, Osorio. A school project model, not medical advice.</span>
+    <button id="stop" type="button">Stop calculator</button>
+  </footer>
+</main>
+</body>
+</html>

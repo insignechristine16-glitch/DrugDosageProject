@@ -40,6 +40,8 @@ py -3.14 -m venv .venv
 
 The run writes fresh tables and plots to `results/`. Run the same command without `--no-ui` to open the local calculator. If it does not open automatically, use the address printed in the terminal. Select **Stop calculator** or press Ctrl+C to end the session.
 
+Keep `web/` next to `drug_dosage_model.py`. It contains `index.html`, `calculator.css`, and `calculator.js`. Start the browser through Python so the page can call the simulation and load the current run’s results.
+
 In VS Code, select the virtual environment as the Python interpreter and use **Run Python File**. The optional Interactive Window requires `ipykernel` in the same environment.
 
 The program reads both `data/Theoph.csv` and `data/Theoph_provenance.json`. The [official R dataset documentation](https://stat.ethz.ch/R-manual/R-devel/library/datasets/html/Theoph.html) describes the published data and the original study.
