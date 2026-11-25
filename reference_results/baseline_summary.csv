@@ -1,0 +1,10 @@
+Quantity,Value
+Peak concentration (mg/L),751.0
+Time of peak (h),29.31
+"Concentration just before the 2nd dose, 24 h (mg/L)",145.5
+Concentration at 48 h (mg/L),154.9
+Hours below 800 / in range / toxic (of 48),48.0 / 0.0 / 0.0
+First entry into 800-1000 mg/L,never
+Day 2 repeats day 1 within 0.1%?,No (change 19.4%)
+168 h run: repeating cycle min - max (mg/L),155.4 - 756.5
+168 h run: repeats within 0.1%? / hours in range,Yes / 0.0
