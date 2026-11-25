@@ -1,0 +1,21 @@
+{
+  "title": "Theoph: Pharmacokinetics of Theophylline",
+  "source_url": "https://svn.r-project.org/R/trunk/src/library/datasets/data/Theoph.R",
+  "documentation_url": "https://stat.ethz.ch/R-manual/R-devel/library/datasets/html/Theoph.html",
+  "retrieved_date_philippines": "2026-11-03",
+  "raw_source_sha256": "36fafc4b23e7551bb596a7068b391cddc9d6aa725738d43c011bdbf3e60e7bdb",
+  "csv_sha256": "b9d2bbfb2485a21db2b33e0b53ee0266742828ad809b5cf83014fcb8d70e4738",
+  "rows": 132,
+  "subjects": 12,
+  "observations_per_subject": 11,
+  "units": {
+    "Subject": "published identifier",
+    "Wt": "kg",
+    "Dose": "mg/kg",
+    "Time": "hours",
+    "conc": "mg/L"
+  },
+  "provenance": "R datasets package; Boeckmann, Sheiner and Beal (1994), NONMEM Users Guide Part V; study attributed to Robert Upton.",
+  "conversion": "Parsed numeric vectors and decoded ordered-factor labels. No observations changed or removed.",
+  "limitations": "The R dataset does not provide age, height, ideal body weight, smoking status, individual rate constants or a full original study protocol."
+}
