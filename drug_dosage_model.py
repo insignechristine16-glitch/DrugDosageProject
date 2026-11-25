@@ -1,80 +1,4 @@
-"""Drug Dosage Model (Balagao, Insigne, Osorio).
-
-HOW TO RUN IN VS CODE: install Python 3 and the Python and Jupyter extensions,
-then type this in the VS Code terminal (on Windows, "py" instead of "python3"):
-    python3 -m pip install pandas matplotlib ipykernel
-Press "Run Python File" (under a minute): the tables print in the terminal,
-and every table (.csv) and graph (.png) is saved in a results folder for the
-report (its full path is printed at the end). Right-click in this file > "Run
-Current File in Interactive Window" also works: tables and graphs then appear
-like a notebook. The whole file also runs as one cell of a Jupyter notebook.
-
-At the end (PART 11) the calculator web application opens in the browser at
-http://127.0.0.1:8000. Its tabs run the study's calculations: Patient dosage
-(RQ5), Try a schedule (RQ1), Compare schedules (RQ2, RQ4), Find schedules (RQ3,
-RQ4), Measured data (RQ6) and Study results. Press "Stop calculator" on the
-page (or Ctrl+C in the terminal) to end the program. No extra installs:
-Python's own web server runs the page on this computer only. WEB_APP = False
-types the age and weight under the output instead (Enter = 30 years, 70 kg).
-
-A REAL DATASET: PART 9b compares the model with all 132 measured theophylline
-concentrations in data/Theoph.csv, converted from R's official Theoph dataset.
-It uses published label parameters without fitting them to these observations.
-Keep Theoph.csv and Theoph_provenance.json together in the data folder.
-Run without waiting for the calculator:
-    python3 drug_dosage_model.py --no-ui --out results_check
-
-A CUSTOM REAL DRUG REGIMEN (handout option 4): fill in REAL_DRUG at the start of PART 9 with
-values from the drug's prescribing information and run again. Until then,
-PART 9 only lists the values to look up.
-
-Sources
-[1] Drug Dosage Model Project handout, Chapter 14 companion site of Gordon S. I.,
-    Guilfoos B. 2017. Introduction to Modeling and Simulation with MATLAB and
-    Python. CRC Press.
-    http://www.intromodeling.com/wp-content/uploads/2021/11/DRUG-DOSAGE-MODEL-PROJECT.pdf
-[2] Dhillon S, Gill K. 2006. Basic pharmacokinetics. In Clinical
-    Pharmacokinetics, Pharmaceutical Press, pp. 1-44, especially pp. 5, 9-14.
-[3] Brorson S. Forward Euler method. Numerically Solving Ordinary Differential
-    Equations, Mathematics LibreTexts.
-[4] University of Iowa Carver College of Medicine. Maximum Allowable Blood
-    Loss, Circulating Blood Volume table. The model uses 70, 75 and 80 mL/kg
-    within the adult, child and infant reference ranges. The age cutoffs at
-    1 and 12 years are simulation choices.
-    https://iowaprotocols.medicine.uiowa.edu/protocols/maximum-allowable-blood-loss
-[5] Chartwell RX, LLC. Theophylline Oral Solution, USP. DailyMed prescribing
-    information, Clinical Pharmacology, revised February 2026 (PART 9b).
-    https://dailymed.nlm.nih.gov/dailymed/fda/fdaDrugXsl.cfm?setid=1b685384-5d96-46fa-b93b-e96538a2cfe7
-
-Handout equations [1]; i = time step number, dt = time step (hours):
-    absorption(i) = dt * absorption_rate * medicine_in_intestines(i)
-    excretion(i)  = dt * excretion_rate * plasma_level(i)
-    medicine_in_intestines(i+1) = medicine_in_intestines(i) - absorption(i) + intake(i)
-    plasma_level(i+1) = plasma_level(i) - excretion(i) + absorption(i)
-    plasma_concentration(i+1) = plasma_level(i+1) / blood_volume
-
-Adjustments needed before the handout formula can run:
-  * excretion_rate is not given. First-order elimination with a 6 h half-life
-    gives excretion_rate = ln(2) / half_life = 0.1155 per hour [2].
-  * intake(i) is not defined. It is one dose (daily total / doses per day)
-    every 24 / doses_per_day hours starting at t = 0, and 0 at other steps.
-  * eliminated(i+1) = eliminated(i) + excretion(i) is added only to check the
-    drug balance: total swallowed = intestines + plasma + eliminated.
-  * Typing errors fixed: the stray "(" in the excretion line, and
-    plasma_level(I + 1) -> plasma_level(i + 1).
-  * bioavailability (fraction of a dose that reaches the blood [2]) is added
-    for the real drug: intake(i) = bioavailability x dose. The handout's
-    equations absorb the whole dose, so it is 1 there and every handout
-    result is unchanged.
-
-The handout's optional additions [1] in this program:
-  * Option 2 (PART 6): blood volumes 20% smaller and 20% larger.
-  * Option 3 (PARTS 8 and 11): blood volume = 0.07 L/kg x body weight [4]
-    (more per kg for children); the program searches the dosing schedules for
-    a patient's age and weight, on a calculator web page.
-  * Option 4 (PART 9): a real drug's published values replace the handout's;
-    its volume is the volume of distribution from the label.
-"""
+"""One-compartment oral drug dosage simulation and Theoph comparison."""
 
 # %% PART 0. Setup and parameters
 import argparse
@@ -96,7 +20,7 @@ from urllib.parse import parse_qs, urlparse
 import matplotlib
 
 if 'ipykernel' not in sys.modules:
-    matplotlib.use('Agg')    # script run: no graph windows; the graphs are shown on the web page (PART 11)
+    matplotlib.use('Agg')
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -109,7 +33,7 @@ TOTAL_STEP = 500                       # mg/day between tested daily totals
 DAILY_TOTALS = tuple(range(6000, 18001, TOTAL_STEP))
 VOLUMES = (3.68, 4.60, 5.52)           # 20% smaller, baseline, 20% larger [1]
 BLOOD_L_PER_KG = 0.07                  # adult reference coefficient [4]
-# Exclusive age cutoffs (years) chosen for this simulation and coefficients (L/kg) from [4].
+# Exclusive age cutoffs in years, with volume coefficients in L/kg [4].
 BLOOD_L_PER_KG_BY_AGE = ((1, 0.080), (12, 0.075), (math.inf, BLOOD_L_PER_KG))
 WEIGHTS = (50, 60, 70, 80, 90, 100)    # body weights in the option 3 dosing chart, kg
 EXTENDED_H = 168.0                     # one week: long enough to repeat
@@ -155,7 +79,6 @@ def load_theoph_dataset():
 theoph_data, theoph_provenance = load_theoph_dataset()
 os.makedirs(OUT, exist_ok=True)
 
-# Colorblind-safe series colors; green and red mark the two concentration limits.
 COLORS = ('#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4')
 GREEN, RED, INK = '#0ca30c', '#d03b3b', '#52514e'
 plt.rcParams.update({'figure.dpi': 110, 'savefig.dpi': 200, 'axes.grid': True,
@@ -175,18 +98,17 @@ class Parameters:
     half_life_h: float = 6.0
     dt_h: float = 0.01
     duration_h: float = 48.0
-    bioavailability: float = 1.0       # fraction of each dose that reaches the blood [2]
+    bioavailability: float = 1.0
     medicinal_mg_l: float = LOW
     toxic_mg_l: float = HIGH
-    single_dose: bool = False         # published single-dose studies must not receive another dose at 24 h
+    single_dose: bool = False
 
     @property
     def ke_per_h(self):
-        # First-order elimination relationship from [2], p. 11.
         return math.log(2.0) / self.half_life_h
 
 
-# %% PART 0b. The model (handout equations) and the analysis functions
+# %% PART 0b. Simulation and analysis
 def integer_steps(hours, dt):
     steps = round(hours / dt)
     if steps < 1 or not math.isclose(steps * dt, hours, abs_tol=1e-9):
@@ -195,13 +117,7 @@ def integer_steps(hours, dt):
 
 
 def simulate(p):
-    """Literal handout update order: old-state fluxes, then intake [1].
-
-    intake[i] is scheduled at i*dt and enters gut[i+1]. Thus a dose is
-    available to absorption at the next boundary, a one-step lag. Doses
-    scheduled exactly at duration_h are excluded. intake is the part of a
-    dose that is absorbed, bioavailability x dose (all of it in the handout).
-    """
+    """Run the forward Euler model with intake added at the end of each step."""
     values = (p.daily_mg, p.volume_l, p.ka_per_h, p.half_life_h, p.dt_h,
               p.duration_h, p.bioavailability, p.medicinal_mg_l, p.toxic_mg_l)
     if not all(math.isfinite(x) for x in values):
@@ -227,8 +143,8 @@ def simulate(p):
     for i in range(n):
         scheduled = i == 0 if p.single_dose else i % spacing == 0
         intake[i] = dose if scheduled else 0.0
-        absorbed = p.dt_h * p.ka_per_h * gut[i]           # absorption(i)
-        excreted = p.dt_h * p.ke_per_h * plasma[i]        # excretion(i)
+        absorbed = p.dt_h * p.ka_per_h * gut[i]
+        excreted = p.dt_h * p.ke_per_h * plasma[i]
         gut[i + 1] = gut[i] - absorbed + intake[i]
         plasma[i + 1] = plasma[i] - excreted + absorbed
         eliminated[i + 1] = eliminated[i] + excreted
@@ -246,17 +162,13 @@ def first_entry(t, c, low, high):
         if c[i] < low <= c[i + 1]:
             return t[i] + (t[i + 1] - t[i]) * (low - c[i]) / (c[i + 1] - c[i])
         if c[i] >= high > c[i + 1]:
-            # Infimum of entry times on a decreasing upper-threshold crossing.
+            # Interpolate the crossing at the upper limit.
             return t[i] + (t[i + 1] - t[i]) * (high - c[i]) / (c[i + 1] - c[i])
     return None
 
 
 def exposure_hours(t, c, low, high):
-    """Hours below, within, and at/above limits; piecewise-linear estimate.
-
-    Split every time segment at threshold crossings. No point count is
-    mistaken for elapsed time. Isolated threshold contacts have zero duration.
-    """
+    """Compute hours in each range by interpolating threshold crossings."""
     totals = [0.0, 0.0, 0.0]
     for i in range(len(t) - 1):
         a, b = c[i], c[i + 1]
@@ -280,7 +192,7 @@ def summarize(run):
     after_ok = False
     enough_followup = False
     if entry is not None:
-        # Entry occurs at the medicinal level for the default zero-drug initial condition.
+        # The zero-drug initial state first crosses the lower limit.
         remaining = [low] + [v for ti, v in zip(t, c) if ti >= entry]
         enough_followup = p.duration_h - entry >= 24.0 / p.doses_per_day
         after_ok = enough_followup and min(remaining) >= low and max(remaining) < high
@@ -315,13 +227,7 @@ def summarize(run):
 
 
 def exact_concentration(p, time_points):
-    """Independent continuous solution, derived from this linear model.
-
-    The absorbed part of a dose (bioavailability x dose) enters the gut at
-    scheduled time + dt, matching the handout's right-boundary intake
-    convention. Summation uses linearity. The result verifies numerical
-    implementation, not clinical validity.
-    """
+    """Evaluate the continuous solution with the same dose timing as simulate()."""
     ka, ke = p.ka_per_h, p.ke_per_h
     interval, dose = 24.0 / p.doses_per_day, p.bioavailability * p.daily_mg / p.doses_per_day
     count = 1 if p.single_dose else math.ceil(p.duration_h / interval)
@@ -340,12 +246,7 @@ def exact_concentration(p, time_points):
 
 
 def ka_from_peak_time(tmax_h, half_life_h):
-    """Absorption rate whose single-dose peak comes at tmax_h (labels give Tmax, not ka).
-
-    Setting dC/dt = 0 in the exact single-dose solution above gives
-    tmax = ln(ka / ke) / (ka - ke). For ka > ke this falls from 1/ke towards 0,
-    so halving the search interval (bisection) finds the one ka > ke with that tmax.
-    """
+    """Compute the absorption rate by bisection from the single-dose peak time."""
     ke = math.log(2.0) / half_life_h
     if not 0 < tmax_h < 1 / ke:
         raise ValueError(f'Time of peak must be between 0 and {1 / ke:.2f} h for this '
@@ -366,7 +267,7 @@ def ka_from_peak_time(tmax_h, half_life_h):
     return (low + high) / 2
 
 
-# %% PART 0c. Helpers for tables and graphs
+# %% PART 0c. Tables and graphs
 def heading(text):
     print('\n' + '=' * 80 + f'\n{text}\n' + '=' * 80)
 
@@ -432,7 +333,6 @@ def plot_concentration(ax, series, title):
     ax.axhspan(low, high, color=GREEN, alpha=0.08, lw=0)
     ax.axhline(low, color=GREEN, lw=1.2, ls='--')
     ax.axhline(high, color=RED, lw=1.2, ls='--')
-    # Limit labels sit just outside the right edge so they never cover a curve.
     ax.text(1.01, low, f'medicinal\n{low:g} mg/L', transform=ax.get_yaxis_transform(),
             va='center', color=INK, fontsize=8)
     ax.text(1.01, high, f'toxic\n{high:g} mg/L', transform=ax.get_yaxis_transform(),
@@ -455,7 +355,7 @@ def plot_amounts(ax, run, title):
     ax.legend(loc='upper left')
 
 
-GRAPHS = []     # graph files saved by this run, also shown on the calculator web page (PART 11)
+GRAPHS = []
 
 
 def save_figure(fig, name, layout_rect=None):
@@ -464,9 +364,9 @@ def save_figure(fig, name, layout_rect=None):
     if name not in GRAPHS:
         GRAPHS.append(name)
     if 'ipykernel' in sys.modules:
-        plt.show()      # notebook: the graph appears under the cell now
+        plt.show()
     else:
-        plt.close(fig)  # script run: the graph is shown on the calculator web page (PART 11)
+        plt.close(fig)
 
 
 heading('PART 0. Model parameters and experiment design')
@@ -504,7 +404,7 @@ show('Table P2. Experiment design', [
 ], 'table_experiment_design.csv')
 
 
-# %% PART 1. Verification: does the code solve the handout equations correctly?
+# %% PART 1. Numerical verification
 heading('PART 1. VERIFICATION - does the code solve the handout equations correctly?')
 
 
@@ -517,13 +417,7 @@ def verify():
     def check(name, passed, result):
         checks.append({'Check': name, 'Result': result, 'Status': 'PASS' if passed else 'FAIL'})
 
-    # Hand calculation of the first steps (baseline, dt = 0.01 h, ke = 0.11552/h):
-    #   i=0: absorption = 0.01*0.25*0 = 0            G1 = 0 - 0 + 6000 = 6000   P1 = 0
-    #   i=1: absorption = 0.01*0.25*6000 = 15        G2 = 6000 - 15 = 5985
-    #        excretion  = 0.01*0.11552*0 = 0         P2 = 0 - 0 + 15 = 15
-    #   i=2: absorption = 0.01*0.25*5985 = 14.9625   G3 = 5985 - 14.9625 = 5970.0375
-    #        excretion  = 0.01*0.11552*15 = 0.01733  P3 = 15 - 0.01733 + 14.9625 = 29.94517
-    #   C = P / 4.6:  C2 = 3.26087,  C3 = 6.50982 mg/L
+    # Reference states from the first three steps calculated by hand.
     hand = {1: (6000.0, 0.0, 0.0), 2: (5985.0, 15.0, 3.26087),
             3: (5970.0375, 29.94517, 6.50982)}
     manual, worst = [], 0.0
@@ -613,7 +507,7 @@ right.set(title='Halving the time step halves the error', xlabel='Time step (hou
 save_figure(fig, 'fig1_verification.png')
 
 
-# %% PART 2. RQ1 - baseline: 6000 mg once a day, 4.60 L, 48 h
+# %% PART 2. RQ1: Baseline
 heading('PART 2. RQ1 - Baseline: 6000 mg once a day, blood volume 4.60 L, 48 hours')
 baseline = simulate(base)
 base48 = summarize(baseline)
@@ -661,7 +555,7 @@ plot_amounts(bottom, baseline, 'Drug amounts in each part of the model')
 save_figure(fig, 'fig2_baseline_48h.png')
 
 
-# %% PART 3. Experiment grid (used by RQ2, RQ3 and RQ4)
+# %% PART 3. Schedule grid
 heading('PART 3. Experiment grid: 25 daily totals x 8 frequencies x 3 volumes, 168 h each')
 print('Running 600 schedules, about half a minute ...')
 grid = []
@@ -672,7 +566,7 @@ for volume in VOLUMES:
                                                       volume_l=volume, duration_h=EXTENDED_H))))
 pd.DataFrame(grid).to_csv(os.path.join(OUT, 'experiment_grid_168h.csv'), index=False)
 
-# Schedules that pass at dt = 0.01 h are re-run at dt = 0.005 h; the finer result is kept.
+# Recheck passing schedules at the finer time step.
 refined = []
 for row in grid:
     if row['last_cycle_in_range_and_converged'] or row['stays_in_range_after_first_entry']:
@@ -706,7 +600,7 @@ if changed:
           + (' The repeating-cycle result did not change.' if same_cycle else ''))
 
 
-# %% PART 4. RQ2 - effects of daily dosage and dosing frequency
+# %% PART 4. RQ2: Dose and frequency
 heading('PART 4. RQ2 - Effects of daily dosage and dosing frequency (4.60 L, 168 h)')
 rows = []
 for frequency in FREQUENCIES:
@@ -742,7 +636,7 @@ plot_concentration(right, [(f'{d:,} mg/day', simulate(Parameters(daily_mg=d, dos
 save_figure(fig, 'fig3_rq2_frequency_and_dosage.png')
 
 
-# %% PART 5. RQ3 - which tested schedules stay within 800-1000 mg/L?
+# %% PART 5. RQ3: Schedule selection
 heading('PART 5. RQ3 - Which tested schedules stay within 800-1000 mg/L? (4.60 L)')
 cells = {(r['daily_mg'], r['doses_per_day']): status(r) for r in grid if math.isclose(r['volume_l'], 4.60)}
 show('Table 9. Final repeating cycle of every tested schedule at 4.60 L (168 h, dt = 0.01 h)',
@@ -761,7 +655,7 @@ show('Table 10. Candidate schedules at 4.60 L, re-checked with dt = 0.005 h', [
      'Same at dt 0.01': yes_no(r['same_result_at_dt_0.01'])}
     for r in refined if math.isclose(r['volume_l'], 4.60)], 'rq3_candidates_4.60L.csv')
 
-# Selection: fewest tested daily doses, then lowest tested daily total.
+# Prefer fewer doses, then a lower daily total.
 criteria = (('Repeating cycle in range', 'last_cycle_in_range_and_converged'),
             ('Stays in range after first entry', 'stays_in_range_after_first_entry'))
 selected = {}
@@ -784,7 +678,7 @@ plot_concentration(ax, series, 'Selected tested schedules at 4.60 L (168 h)')
 save_figure(fig, 'fig4_rq3_selected_4.60L.png')
 
 
-# %% PART 6. RQ4 - blood volumes 3.68, 4.60 and 5.52 L (handout option 2)
+# %% PART 6. RQ4: Blood volume
 heading('PART 6. RQ4 - Blood volumes 3.68 L (-20%), 4.60 L and 5.52 L (+20%)')
 
 
@@ -848,7 +742,7 @@ right.legend(loc='upper left')
 save_figure(fig, 'fig5_rq4_blood_volume.png')
 
 
-# %% PART 7. Supplementary: estimated dosage windows from the Euler runs
+# %% PART 7. Estimated dose windows
 def estimated_dose_window(row):
     """Scale cycle extrema to the inclusive lower and exclusive upper limits."""
     lowest = row['daily_mg'] * row['medicinal_mg_l'] / row['last_cycle_min_mg_l']
@@ -873,7 +767,7 @@ show(f'Table 14. Estimated daily totals for the repeating cycle (Euler dt = {bas
      'supplementary_estimated_windows.csv')
 
 
-# %% PART 8. Handout option 3 - dosage by body weight
+# %% PART 8. RQ5: Weight and age
 heading('PART 8. Option 3 - Dosage by body weight (blood volume = 0.07 L per kg [4])')
 
 
@@ -890,20 +784,14 @@ def blood_volume_l(weight_kg, age_years=None):
 
 
 def candidate_totals(p, step_mg):
-    """Daily totals (multiples of step_mg) whose steady-state average is in range.
-
-    The average is bioavailability x daily total / (24 x excretion rate x volume)
-    (Part 4, [2]). A repeating cycle inside the limits has its average inside
-    them too, so no other daily total can keep the cycle in range.
-    """
+    """List daily totals whose steady-state mean can meet the target."""
     per_mg_l = 24 * p.ke_per_h * p.volume_l / p.bioavailability   # mg/day for an average of 1 mg/L
     return [k * step_mg for k in range(math.ceil(p.medicinal_mg_l * per_mg_l / step_mg),
                                        math.ceil(p.toxic_mg_l * per_mg_l / step_mg))]
 
 
 def best_schedule(p, step_mg):
-    """Fewest doses per day, then lowest daily total (the Part 5 rule), whose
-    repeating cycle stays in range at dt = 0.01 h and again at REFINED_DT."""
+    """Find the lowest-frequency, lowest-total schedule that passes at both steps."""
     for frequency in FREQUENCIES:
         for daily in candidate_totals(p, step_mg):
             q = replace(p, daily_mg=daily, doses_per_day=frequency)
@@ -938,36 +826,9 @@ show('Table 15. Dosing chart for the handout drug: chosen schedule by body weigh
     for w, p, r in chart], 'option3_dosing_chart_by_weight.csv')
 
 
-# %% PART 9. Handout option 4 - a real drug (published pharmacokinetics)
+# %% PART 9. Optional published regimen
 heading('PART 9. Option 4 - A real drug: published pharmacokinetics and validation')
-# FILL IN with values from the drug's prescribing information (DailyMed or the FDA label,
-# section "Clinical Pharmacology - Pharmacokinetics"); the handout suggests mesalamine
-# (Apriso), Celebrex, Lotensin HCT and Synthroid [1]. Cite every value in the paper [5].
-# Units: mg, hours, litres, kg. Concentrations in mg/L: 1 mcg/mL = 1 mg/L, 1 ng/mL = 0.001 mg/L.
-REAL_DRUG = None
-# REAL_DRUG = dict(
-#     name='Drug name',
-#     dose_mg=0,             # one dose of the usual adult regimen
-#     doses_per_day=0,       # usual adult regimen: 1, 2, 3, 4, 6, 8, 12 or 24
-#     half_life_h=0,         # elimination half-life
-#     time_of_peak_h=0,      # Tmax after one dose; gives the absorption rate (or give ka_per_h=...)
-#     bioavailability=0,     # fraction of a dose that reaches the blood, above 0 and at most 1
-#     volume_l_per_kg=0,     # volume of distribution; if the label gives litres, divide by weight_kg;
-#                            # if it gives Vd/F (apparent volume), use that with bioavailability=1
-#     weight_kg=70,          # body weight of the label's study patients (70 if not stated)
-#     medicinal_mg_l=0,      # lowest effective concentration (low end of the therapeutic range)
-#     toxic_mg_l=0,          # concentration where toxic effects start (high end of the range)
-#     daily_step_mg=0,       # smallest change of the daily total, e.g. one tablet strength
-#     age_groups=[           # optional, other ages from the label ("Use in Specific Populations"):
-#         (1, 12, 0, 0),     # (from age, up to but not including age, half-life h, volume L/kg)
-#     ],
-#     published={            # measured values to compare with; delete the ones you do not have
-#         'Single-dose peak (mg/L)': 0,
-#         'Steady-state peak (mg/L)': 0,
-#         'Steady-state trough (mg/L)': 0,
-#         'Steady-state average (mg/L)': 0,
-#     },
-# )
+REAL_DRUG = None  # See the README for the optional configuration.
 LOOK_UP = (  # (key, value to find, unit, where it is in the prescribing information)
     ('dose_mg', 'One dose of the usual adult regimen', 'mg', 'Dosage and Administration'),
     ('doses_per_day', 'Doses per day', 'per day', 'Dosage and Administration'),
@@ -985,10 +846,7 @@ LOOK_UP = (  # (key, value to find, unit, where it is in the prescribing informa
 
 
 def drug_parameters(drug, weight_kg, age_years=None):
-    """The real drug's published rates replace the handout's [1]; the volume is its volume of
-    distribution. A matching row of age_groups replaces the adult half-life and volume per kg.
-    The run lasts 12 half-lives of the slower of absorption and excretion (at least 168 h),
-    so the last cycle repeats the one before it."""
+    """Build simulation parameters from the optional regimen configuration."""
     half_life_h, l_per_kg = drug['half_life_h'], drug['volume_l_per_kg']
     for first_age, end_age, group_half_life_h, group_l_per_kg in drug.get('age_groups', ()):
         if age_years is not None and first_age <= age_years < end_age:
@@ -1092,15 +950,9 @@ else:
     save_figure(fig, 'fig6_real_drug.png')
 
 
-# %% PART 9b. External comparison with the original, measured Theoph dataset
+# %% PART 9b. RQ6: Theoph comparison
 def compare_theoph_dataset(measured, provenance):
-    """Predict an external single-dose study using fixed label parameters.
-
-    No rate constant or volume is fitted to Theoph. Each subject's measured
-    predose concentration is treated as an observed initial condition and
-    decays with the same elimination constant. The untouched measurements,
-    label assumptions, numerical error and prediction errors stay separate.
-    """
+    """Compare fixed-parameter, single-dose predictions with Theoph."""
     heading('PART 9b. Theophylline: model versus 132 real serum measurements')
     label_url = ('https://dailymed.nlm.nih.gov/dailymed/fda/fdaDrugXsl.cfm?'
                  'setid=1b685384-5d96-46fa-b93b-e96538a2cfe7')
@@ -1190,8 +1042,7 @@ def compare_theoph_dataset(measured, provenance):
          [{k: round(v, 4) if isinstance(v, float) else v for k, v in row.items()} for row in subject_rows],
          'theoph_subject_metrics.csv')
     metrics = []
-    # Predose samples are used as initial conditions. The primary error score
-    # therefore excludes all 12 predose samples rather than rewarding the model for them.
+    # Predose measurements set the initial conditions.
     for label, subset in [('Post-dose observations (primary)', frame[frame['Time_h'] > 0]),
                           ('All observations (includes supplied initial conditions)', frame)]:
         error = subset['Residual_predicted_minus_observed_mg_L']
@@ -1244,9 +1095,9 @@ def compare_theoph_dataset(measured, provenance):
 theoph_comparison = compare_theoph_dataset(theoph_data, theoph_provenance)
 
 
-# %% PART 10. Summary of findings (every number below is computed above)
+# %% PART 10. Summary of findings
 heading('SUMMARY OF FINDINGS')
-FINDINGS = []       # the sentences below, also shown on the web application (PART 11)
+FINDINGS = []
 
 
 def finding(text):
@@ -1292,14 +1143,14 @@ finding(f"Verification: {sum(row['Status'] == 'PASS' for row in checks)} of {len
          f'This verifies the code; Table 18 compares the model with published measurements of {name}.'))
 
 
-# %% PART 11. Web application: the study's calculations, and the dosage for a patient (handout option 3)
+# %% PART 11. Local calculator
 heading("PART 11. Web application - the study's calculations and a patient's dosage")
 HANDOUT_NAME = 'Handout drug'
 DRUGS = [HANDOUT_NAME] + ([name] if drug_p is not None else [])
 
 
 def recommend(drug_name, age_years, weight_kg):
-    """The Part 8 search for one patient, and the text the calculator shows about it."""
+    """Find a schedule for the supplied age and weight."""
     if drug_name == HANDOUT_NAME:
         p, step = Parameters(volume_l=blood_volume_l(weight_kg, age_years), duration_h=EXTENDED_H), TOTAL_STEP
         volume = f'Blood volume {p.volume_l:.2f} L = {1000 * blood_l_per_kg(age_years):g} mL/kg x {weight_kg:g} kg'
@@ -1308,7 +1159,7 @@ def recommend(drug_name, age_years, weight_kg):
         p, step = drug_parameters(REAL_DRUG, weight_kg, age_years), REAL_DRUG['daily_step_mg']
         volume = f'Volume of distribution {p.volume_l:.1f} L'
         adult_values = not any(first <= age_years < end for first, end, *_ in REAL_DRUG.get('age_groups', ()))
-    for size in (step, step / 5, step / 50):      # finer dose steps when a small patient fits none
+    for size in (step, step / 5, step / 50):
         best = best_schedule(p, size)
         if best is not None:
             break
@@ -1338,8 +1189,7 @@ def recommend(drug_name, age_years, weight_kg):
 
 
 def ask_number(question, default, low, high):
-    """A number typed under the output. Enter, a bad answer or no keyboard (a
-    notebook run in the background, a script run without a terminal) gives the default."""
+    """Read a number within the allowed range and use the default as needed."""
     try:
         answer = input(f'{question}, {low:g} to {high:g} (press Enter for {default:g}): ').strip()
     except (EOFError, RuntimeError):
@@ -1356,7 +1206,7 @@ def ask_number(question, default, low, high):
 
 
 def typed_calculator():
-    """WEB_APP = False: the age and weight are typed under the output instead of on the web page."""
+    """Run the dosage calculator in the terminal."""
     age = ask_number("Patient's age in years", 30, 0, 110)
     weight = ask_number("Patient's weight in kg", 70, 2, 250)
     results = [(drug_name, recommend(drug_name, age, weight)) for drug_name in DRUGS]
@@ -2066,7 +1916,7 @@ def web_find(form):
     tested = {(d, f): summarize(simulate(Parameters(daily_mg=d, doses_per_day=f, volume_l=volume,
                                                     duration_h=EXTENDED_H)))
               for d in totals for f in FREQUENCIES}
-    # The Part 5 rule: passing schedules are re-run at REFINED_DT, then the fewest doses and lowest total win.
+    # Recheck candidates before ranking the schedules.
     checked = {(d, f): summarize(simulate(Parameters(daily_mg=d, doses_per_day=f, volume_l=volume,
                                                      duration_h=EXTENDED_H, dt_h=REFINED_DT)))
                for (d, f), r in tested.items()
@@ -2207,7 +2057,7 @@ class CalculatorRequests(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def log_message(self, *args):
-        pass                            # the terminal shows one line per calculation instead
+        pass
 
 
 def start_web_server():
@@ -2221,8 +2071,9 @@ def start_web_server():
 
 
 WEB_LOCK = threading.Lock()
-if isinstance(globals().get('calculator_server'), ThreadingHTTPServer):   # notebook re-run:
-    calculator_server.shutdown()                                          # stop the last run's page
+# Stop a previous calculator before rerunning the notebook cell.
+if isinstance(globals().get('calculator_server'), ThreadingHTTPServer):
+    calculator_server.shutdown()
     calculator_server.server_close()
 calculator_server = start_web_server() if WEB_APP and not NO_UI else None
 if NO_UI:
@@ -2235,14 +2086,14 @@ else:
           '(if it does not, Cmd+click or Ctrl+click that link).\n'
           "Its tabs run the study's calculations. Each one prints a line here.")
     webbrowser.open(url)
-    if 'ipykernel' in sys.modules:      # notebook: the page keeps working after this cell ends
+    if 'ipykernel' in sys.modules:
         threading.Thread(target=calculator_server.serve_forever, daemon=True).start()
         print('The page works until "Stop calculator" is pressed or the notebook restarts.')
     else:
         print('To end the program, press "Stop calculator" on the page, or Ctrl+C here.')
         try:
             calculator_server.serve_forever()
-        except KeyboardInterrupt:       # Ctrl+C in the terminal
+        except KeyboardInterrupt:
             pass
         calculator_server.server_close()
         print('Calculator stopped.')
