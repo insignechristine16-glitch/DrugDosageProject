@@ -1,0 +1,7 @@
+Criterion,Volume (L),Daily total (mg),Doses/day,mg per dose,Trough (mg/L),Peak (mg/L),Hours in range
+Repeating cycle in range,3.68,9000,4,2250.0,810.1,920.0,144.8
+Repeating cycle in range,4.6,11500,4,2875.0,828.1,940.4,146.8
+Repeating cycle in range,5.52,13500,4,3375.0,810.1,920.0,144.8
+Stays in range after first entry,3.68,9500,6,1583.3,896.2,949.0,147.5
+Stays in range after first entry,4.6,12000,6,2000.0,905.6,958.9,147.6
+Stays in range after first entry,5.52,14500,6,2416.7,911.9,965.6,147.7

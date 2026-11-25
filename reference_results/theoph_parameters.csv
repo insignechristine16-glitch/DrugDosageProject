@@ -1,0 +1,9 @@
+Parameter,Value,Unit,Basis
+Half-life,8.7,h,Label Table I: mean for otherwise healthy nonsmoking asthmatic adults; Theoph population details are unavailable.
+Distribution volume per kg,0.45,L/kg,Label Distribution: ideal body weight. Observed weight is used as a proxy because ideal weight is unavailable.
+Time to peak,1.5,h,"Assumed midpoint of the label interval 1-2 h, not a measured Theoph parameter."
+Absorption rate,2.3301983019366164,1/h,Derived from the assumed peak time and label half-life; not fitted to Theoph.
+Bioavailability,1.0,fraction,Model approximation to label complete absorption and no appreciable first-pass loss.
+Numerical time step,0.001,h,Smaller Euler step for faster theophylline absorption; checked again at 0.0005 h. Handout experiments keep 0.01 h.
+Dose for each subject,Dose x Wt,mg,Use each recorded mg/kg dose and weight; give it only once.
+Initial serum concentration,Measured at Time = 0,mg/L,"Observed initial condition, decayed as C0 exp(-ke t); baseline is not fitted."

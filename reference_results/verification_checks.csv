@@ -1,0 +1,13 @@
+Check,Result,Status
+"Manual calculation, steps 1-3",largest difference 1.3e-06,PASS
+Drug balance: swallowed = G + P + E,largest error 6.0e-11 mg,PASS
+No negative drug amounts,G >= 0 and P >= 0 at every step,PASS
+Zero dose gives zero concentration,max C = 0,PASS
+No absorption (ka = 0) gives zero concentration,max C = 0,PASS
+Double the dose -> double the concentration,largest difference 0.0e+00,PASS
+20% smaller volume -> 1.25 x concentration,largest difference 2.3e-13,PASS
+Half the bioavailability -> half the concentration,largest difference 0.0e+00,PASS
+Error shrinks as the time step shrinks,2.944 -> 1.468 -> 0.733 -> 0.366 mg/L,PASS
+Peak changes < 0.1% from dt 0.01 to 0.005 h,0.030%,PASS
+Time of peak -> absorption rate (used for a real drug),peak at 5.74 h gives ka = 0.2501 per hour,PASS
+Single-dose study: no second dose at 24 h,"one dose only, including the observations after 24 h",PASS

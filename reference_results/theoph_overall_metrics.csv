@@ -1,0 +1,3 @@
+Evaluation,N,MAE (mg/L),RMSE (mg/L),Mean bias (mg/L),R squared (descriptive)
+Post-dose observations (primary),120,1.3662,1.8607,0.8105,0.4562
+All observations (includes supplied initial conditions),132,1.242,1.7741,0.7368,0.6143

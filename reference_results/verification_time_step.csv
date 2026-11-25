@@ -1,0 +1,5 @@
+Time step (h),Max error vs exact (mg/L),Peak concentration (mg/L)
+0.04,2.944,752.418
+0.02,1.4678,751.498
+0.01,0.7329,751.039
+0.005,0.3662,750.811
